@@ -1,0 +1,10 @@
+runtime: python
+env: flex
+entrypoint: gunicorn -b :$PORT main:app
+
+skip_files:
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*desktop/.*$
+- ^(.*/)?.*shelf/.*$
+- ^env/.*

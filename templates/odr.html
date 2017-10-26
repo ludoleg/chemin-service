@@ -7,7 +7,7 @@ $(document).ready(function(){
     $("button").click(function(){
       $.ajax({
         type: 'POST',
-        url: 'http://localhost:8000/chemin',
+        url: 'http://chemin.qanalyze.com/chemin',
         data: JSON.stringify(data),
 success: function(data) {
     var w = window.open('about:blank', 'windowname');

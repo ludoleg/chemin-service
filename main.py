@@ -18,6 +18,8 @@ import sys
 
 # [START app]
 import logging
+
+
 import os
 import phaselist
 
@@ -50,6 +52,8 @@ ALLOWED_EXTENSIONS = set(['txt', 'plv'])
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = 'Ludo'
+
+app.config['DEBUG'] = True
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -288,7 +292,7 @@ def chemin_process_data():
     print(selectedphases, file=sys.stderr)
 
     # Chemin: Parameters are fixed, as well as the mineral database
-    InstrParams = {"Lambda": 0, "Target": 'Co', "FWHMa": 0.0022, "FWHMb": 0.35}
+    InstrParams = {"Lambda": 0, "Target": 'Co', "FWHMa": 0.00, "FWHMb": 0.35}
     DBname ='difdata_CheMin.txt'
     # Dif data captures all cristallographic data
     # Load in the DB file
@@ -350,6 +354,76 @@ def csvDownload():
     return output
 # [END CVS]
 
+
+# Start ludo
+@app.route('/ludo')
+def ludo():
+    return render_template('odr.html')
+
+@app.route('/ludo', methods=['POST'])
+def ludo_process_data():
+    json_dict = request.get_json()
+
+    sample = json_dict["sample"]
+    samplename = sample["name"]
+
+    array = sample["data"]
+    angle = [li['x'] for li in array]
+    diff = [li['y'] for li in array]
+
+    phasearray = json_dict["phases"]
+    selectedphases = [(d['name'], d['AMCSD_code']) for d in phasearray]
+
+    print(selectedphases, file=sys.stderr)
+
+    # Chemin: Parameters are fixed, as well as the mineral database
+    InstrParams = {"Lambda": 0, "Target": 'Co', "FWHMa": 0.00, "FWHMb": 0.35}
+    DBname ='difdata_CheMin.txt'
+    # Dif data captures all cristallographic data
+    # Load in the DB file
+    difdata = open(DBname, 'r').readlines()
+    
+    #Data coming from ODR
+    #samplename = "Mix3C-film.txt"
+    # userData = (samples.angle, samples.diff)
+    userData = (angle, diff)
+#    selectedphases = samples.phaselist.items()
+    print(selectedphases, file=sys.stderr)
+        
+    results, BG, calcdiff = qxrd.Qanalyze(userData, difdata, selectedphases, InstrParams)
+    print(userData, file=sys.stderr)
+
+    twoT = userData[0]
+    diff = userData[1]
+
+    # logging.debug(results)
+    # logging.info("Done with processing")
+
+    angle = twoT
+    # diff = diff
+    bgpoly = BG
+    #calcdiff = calcdiff
+
+    # csv = session_data_key.urlsafe()
+    csv = 'LUDO'
+    
+    template_vars = {
+        'phaselist': results,
+        'angle': angle,
+        'diff': diff,
+        'bgpoly': bgpoly.tolist(),
+        'sum': calcdiff.tolist(),
+        'url_text': csv,
+        'key': 'ludo',
+        'samplename': samplename,
+        'mode': ''
+    }
+    return render_template('chart.html', **template_vars)
+# [END ludo]
+
+
+
+
 @app.errorhandler(500)
 def server_error(e):
     logging.exception('An error occurred during a request.')
@@ -363,3 +437,5 @@ if __name__ == '__main__':
     # application on Google App Engine. See entrypoint in app.yaml.
     app.run(host='127.0.0.1', port=8080, debug=True)
 # [END app]
+
+

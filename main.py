@@ -104,6 +104,10 @@ def printdata():
 def odr():
     return render_template('odr.html')
 
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
 @app.route('/')
 def hello():
     session['inventory'] = 'rockforming';
@@ -115,9 +119,31 @@ def hello():
     session['selected'] = phaselist.defaultPhases
     session['available'] = phaselist.availablePhases
 
-    print(session, file=sys.stderr)
+    # print(session, file=sys.stderr)
     return render_template('index.html')
 
+@app.route('/run_post')
+def run_post():
+    url = '/parse_post'
+    data = {'name': 'Burbank', 'format': 'XRD', 'coord': 36}
+    headers = {'Content-Type': 'application/json'}
+
+    return Request('POST',url, data=json.dumps(data), headers=headers)
+
+@app.route('/parse_post', methods=['POST'])
+def parse_post():
+    if request.method == 'POST':
+        json_dict = request.get_json()
+        filename = json_dict['name']
+        print(filename, file=sys.stderr)
+
+        return '''
+    <!doctype html>
+    <title>Upload new File</title>
+    <h1>YES!</h1>
+    '''
+    else:
+        return '''<html><body>Something went horribly wrong</body></html>'''
 
 @app.route('/cheminfile')
 def get_data():
@@ -156,7 +182,7 @@ def phase():
         return redirect('/')
     else:
         mode = QuantModeModel()
-        print(mode, file=sys.stderr)
+        # print(mode, file=sys.stderr)
         # session['mode'] = mode
 
         template_vars = {
@@ -219,7 +245,7 @@ def process():
 
     # Phase selection
     selectedPhases = session['selected']
-    print(selectedPhases, file=sys.stderr)
+    # print(selectedPhases, file=sys.stderr)
 
     # Dif data captures all cristallographic data
     selectedphases = []
@@ -234,7 +260,7 @@ def process():
     results, BG, calcdiff = qxrd.Qanalyze(userData, difdata, selectedphases, InstrParams)
 
     # print(twoT.tolist(), file=sys.stderr)
-    print(userData, file=sys.stderr)
+    # print(userData, file=sys.stderr)
 
     # session.results = results
     # session.put()
@@ -273,13 +299,36 @@ def process():
     #return return_str
 # [END process]
 
+# [START parseSampleFile]
+@app.route('/parseSampleFile', methods=['POST'])
+def parse_sample_file():
+    uploaded_file = request.files.get('file')
+    if not uploaded_file:
+        return 'No file uploaded.', 400
+
+    # Load the sample data file in userData
+    # parse sample data file wrt format
+
+    filename = uploaded_file.filename
+    XRDdata = uploaded_file
+    userData = qxrdtools.openXRD(XRDdata, filename)
+    
+    return render_template('chart.html', **template_vars)
+
+    
+    #    return "Total computation  time = %.2fs" %(time.time()-t0)
+    #return_str = ''
+    #return_str += 'results: {}<br />'.format(str(results))
+    #return return_str
+# [END parseSampleFile]
+
 # [START chemin micro service]
 # WE are not using np.loadtxt to split angle, diff so no need to massage for display
 # util for chemin service
 # util for chemin service
 # util for chemin service
-@app.route('/chemin', methods=['POST'])
-def chemin_process_data():
+@app.route('/odr', methods=['POST'])
+def odr_process_data():
     json_dict = request.get_json()
     # samplename = json_dict['samplename']
     # list = json_dict['phaselist']
@@ -289,7 +338,7 @@ def chemin_process_data():
     angle = json_dict['angle']
     diff = json_dict['diff']
     selectedphases = list.items()
-    print(selectedphases, file=sys.stderr)
+    # print(selectedphases, file=sys.stderr)
 
     # Chemin: Parameters are fixed, as well as the mineral database
     InstrParams = {"Lambda": 0, "Target": 'Co', "FWHMa": 0.00, "FWHMb": 0.35}
@@ -303,10 +352,10 @@ def chemin_process_data():
     # userData = (samples.angle, samples.diff)
     userData = (angle, diff)
 #    selectedphases = samples.phaselist.items()
-    print(selectedphases, file=sys.stderr)
+    # print(selectedphases, file=sys.stderr)
         
     results, BG, calcdiff = qxrd.Qanalyze(userData, difdata, selectedphases, InstrParams)
-    print(userData, file=sys.stderr)
+    # print(userData, file=sys.stderr)
 
     twoT = userData[0]
     diff = userData[1]

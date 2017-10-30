@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from __future__ import print_function # In python 2.7
+# from __future__ import print_function # In python 2.7
 import sys
 
 # [START app]
@@ -100,9 +100,9 @@ def printdata():
     resp = make_response(render_template('index.html'))
     return resp    
 
-@app.route('/odr')
-def odr():
-    return render_template('odr.html')
+@app.route('/odr_demo')
+def odr_demo():
+    return render_template('odr_demo.html')
 
 @app.route('/about')
 def about():
@@ -135,7 +135,8 @@ def parse_post():
     if request.method == 'POST':
         json_dict = request.get_json()
         filename = json_dict['name']
-        print(filename, file=sys.stderr)
+#        print(filename, file=sys.stderr)
+        print(filename)
 
         return '''
     <!doctype html>
@@ -327,7 +328,7 @@ def parse_sample_file():
 # util for chemin service
 # util for chemin service
 # util for chemin service
-@app.route('/odr', methods=['POST'])
+@app.route('/odr_process', methods=['POST'])
 def odr_process_data():
     json_dict = request.get_json()
     # samplename = json_dict['samplename']
@@ -409,6 +410,40 @@ def csvDownload():
 def ludo():
     return render_template('odr.html')
 
+@app.route('/odr', methods=['POST'])
+def odr():
+    if request.method == 'POST':
+        json_dict = request.get_json()
+        sample = json_dict["sample"]
+        samplename = sample["name"]
+
+        array = sample["data"]
+        angle = [li['x'] for li in array]
+        diff = [li['y'] for li in array]
+        
+        phasearray = json_dict["phases"]
+        selectedphases = [(d['name'], d['AMCSD_code']) for d in phasearray]
+
+        # print(selectedphases, file=sys.stderr)
+        # print(samplename, file=sys.stderr)
+        # print(angle, file=sys.stderr)
+        # print(diff, file=sys.stderr)
+
+        InstrParams = {"Lambda": 0, "Target": 'Co', "FWHMa": 0.00, "FWHMb": 0.35}
+        DBname ='difdata_CheMin.txt'
+        # Dif data captures all cristallographic data
+        # Load in the DB file
+        difdata = open(DBname, 'r').readlines()
+        userData = (angle, diff)
+        print(userData)
+        
+        results, BG, calcdiff = qxrd.Qanalyze(userData, difdata, selectedphases, InstrParams)
+    return '''
+    <!doctype html>
+    <title>Upload new File</title>
+    <h1>GOOD</h1>
+    '''
+
 @app.route('/ludo', methods=['POST'])
 def ludo_process_data():
     json_dict = request.get_json()
@@ -423,7 +458,7 @@ def ludo_process_data():
     phasearray = json_dict["phases"]
     selectedphases = [(d['name'], d['AMCSD_code']) for d in phasearray]
 
-    print(selectedphases, file=sys.stderr)
+    print(selectedphases)
 
     # Chemin: Parameters are fixed, as well as the mineral database
     InstrParams = {"Lambda": 0, "Target": 'Co', "FWHMa": 0.00, "FWHMb": 0.35}
@@ -436,11 +471,10 @@ def ludo_process_data():
     #samplename = "Mix3C-film.txt"
     # userData = (samples.angle, samples.diff)
     userData = (angle, diff)
-#    selectedphases = samples.phaselist.items()
-    print(selectedphases, file=sys.stderr)
+    print(userData)
+    #    selectedphases = samples.phaselist.items()
         
     results, BG, calcdiff = qxrd.Qanalyze(userData, difdata, selectedphases, InstrParams)
-    print(userData, file=sys.stderr)
 
     twoT = userData[0]
     diff = userData[1]
@@ -469,9 +503,6 @@ def ludo_process_data():
     }
     return render_template('chart.html', **template_vars)
 # [END ludo]
-
-
-
 
 @app.errorhandler(500)
 def server_error(e):

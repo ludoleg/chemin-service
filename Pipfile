@@ -8,9 +8,9 @@ name = "pypi"
 [packages]
 
 flask = "*"
-numpy = "==1.8.0"
 scipy = "==0.13.0"
 gunicorn = "*"
+numpy = "==1.9.0"
 
 
 [dev-packages]

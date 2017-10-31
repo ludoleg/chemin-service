@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3dc1e9598553b7a13160aa17fd4b1167d8bd14cd25b4a359dc4485593e698682"
+            "sha256": "78e15dd01ed34c411a36acb53a86ae92cf9e17f4815ebcd6ad58893e2f72daf0"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
@@ -71,16 +71,20 @@
         },
         "numpy": {
             "hashes": [
-                "sha256:1688709ed36f6064f92bdb446a291340910bcc7a7da1496041c56fc8c210239c",
-                "sha256:2d19a86e3af82c19bc85cabe33d8fa2039fab86554297a0a967cf5f1b7868189",
-                "sha256:02f43ea7097b3d8869a1367e04ff51a1320903c57aed12939670277b900065cd",
-                "sha256:e6d1db33fb074b28b0485133428e41f4c2f5785f9305fca11fa56e6250e21646",
-                "sha256:aca94585efd9fb682bc3fee5218656f2c05bfad84753a304fa7cb80086ad1a26",
-                "sha256:fdf91cf94463360f33d418c07821ac86e9f0eb26cdfcc9e722541c50fa3cc7fd",
-                "sha256:2764d0819acc77e9ff81b060fe7f69530b0d85c26ac9d162639b787cb227d253",
-                "sha256:dbb94a197228f55f1e3177e6bcdd301eb5204b4ff241f5a1cae5a8fd21d2494c"
+                "sha256:6cd9802d9d67abc95c649fff6a56ddd2e9ca060dc9de3d63697f18b263af53fd",
+                "sha256:f73d6f7339216c382ff512d0c51a26830b0c4e5c1dc157bcb1780cf6ef866ab1",
+                "sha256:0ed614e0c426a7dad2bfa642d7a541868560648635c62108ace45bfc0b814f7b",
+                "sha256:ff64c4a6d588ebacfbc50cc5604637cdfdc37fa03ae3e32ab947972d26b12429",
+                "sha256:e2eba63ac2907d76a02344793aac9ee6466082e11eed83a1e31b8d7bd61da0bd",
+                "sha256:8b7450bea8ebf8f9eaaa2c12daf34b313fc5e492bbb41a99e4890e2bce722bde",
+                "sha256:a92ecb1c4db742b9a74992a4c4d54bbcb0eefcb3ff625f73e9887fbc9b19576b",
+                "sha256:3f658ff8d374748e41b5b24d9a4e40d3c8ae789a0c104620c4fa76864e792946",
+                "sha256:54e76ae22f5844dddcf01785243c83366915ffcd74174baec8c33577925dd6bb",
+                "sha256:3536a270d87e2137eec613aaaa07a21ee080146e076ac13892d7661559bb3aca",
+                "sha256:2745b1d64445da3c29a34450320025c11897ae4af77475f861966e98b2cb1a0f",
+                "sha256:a01b100a797f51b6783c3eb0ece2ee2a0678fdd1695c985c8da2427d62e23562"
             ],
-            "version": "==1.8.0"
+            "version": "==1.9.0"
         },
         "scipy": {
             "hashes": [

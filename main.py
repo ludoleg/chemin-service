@@ -40,6 +40,7 @@ ALLOWED_EXTENSIONS = set(['txt', 'plv'])
 
     # [start config]
 app = Flask(__name__)
+CORS(app)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = 'Ludo'
 

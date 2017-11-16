@@ -24,6 +24,7 @@ import StringIO
 import csv
 
 from flask import Flask, request, render_template, session, make_response
+from flask_cors import CORS
 
 #Application modules
 import qxrd

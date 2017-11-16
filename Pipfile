@@ -11,6 +11,7 @@ flask = "*"
 scipy = "==0.13.0"
 gunicorn = "*"
 numpy = "==1.9.0"
+flask-cors = "*"
 
 
 [dev-packages]

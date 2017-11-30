@@ -26,7 +26,7 @@ import csv
 from flask import Flask, request, render_template, session, make_response
 from flask_cors import CORS
 
-#Application modules
+# Application modules
 import qxrd
 import qxrdtools
 
@@ -38,7 +38,7 @@ if not os.path.isdir(UPLOAD_DIR):
 
 ALLOWED_EXTENSIONS = set(['txt', 'plv'])
 
-    # [start config]
+# [start config]
 app = Flask(__name__)
 CORS(app)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -46,17 +46,21 @@ app.secret_key = 'Ludo'
 
 app.config['DEBUG'] = True
 
+
 @app.route('/')
 def hello():
     return render_template('index.html')
+
 
 @app.route('/about')
 def about():
     return render_template('about.html')
 
+
 @app.route('/odr_demo')
 def odr_demo():
     return render_template('odr_demo.html')
+
 
 # [START process]
 @app.route('/process', methods=['POST'])
@@ -72,7 +76,7 @@ def process():
     XRDdata = uploaded_file
     userData = qxrdtools.openXRD(XRDdata, filename)
     # print userData
-    DBname ='difdata_CheMin.txt'
+    DBname = 'difdata_CheMin.txt'
     
     Lambda = 0.0
     Target = 'Co'
@@ -101,10 +105,10 @@ def process():
 
     # Dif data captures all cristallographic data
     selectedphases = []
-    for i in range (len(selectedPhases)):
+    for i in range(len(selectedPhases)):
         name, code = selectedPhases[i].split('\t')
         code = int(code)
-        selectedphases.append((name,code))
+        selectedphases.append((name, code))
 
     # print selectedphases
         
@@ -125,7 +129,7 @@ def process():
     angle = twoT
     # diff = diff
     bgpoly = BG
-    #calcdiff = calcdiff
+    # calcdiff = calcdiff
     # csv = session_data_key.urlsafe()
     csv = 'ODR'
     session['results'] = results
@@ -145,13 +149,14 @@ def process():
     return render_template('chart.html', **template_vars)
 # [END process]
 
+
 # [START ODR service]
-@app.route('/odr', methods=['GET','POST'])
+# Duplicates /process with input from the ODR site
+@app.route('/odr', methods=['GET', 'POST'])
 def odr():
     if request.method == 'POST':
-        #L oad data from request
+        # Load data from request
         json_data = request.get_json()
-        
         data = json_data
         sample = data['sample']
         filename = sample['name']
@@ -166,13 +171,15 @@ def odr():
         phasearray = data['phases']
         selectedphases = [(d['name'], d['AMCSD_code']) for d in phasearray]
         InstrParams = {"Lambda": 0, "Target": 'Co', "FWHMa": 0.00, "FWHMb": 0.35}
-        DBname ='difdata_CheMin.txt'
+        DBname = 'difdata_CheMin.txt'
         # Dif data captures all cristallographic data
         # Load in the DB file
         difdata = open(DBname, 'r').readlines()
         userData = (angle, diff)
         # print(userData)
-        results, BG, calcdiff = qxrd.Qanalyze(userData, difdata, selectedphases, InstrParams)
+
+        session['autoremove'] = False
+        results, BG, calcdiff = qxrd.Qanalyze(userData, difdata, selectedphases, InstrParams, session['autoremove'])
 
         twoT = userData[0]
         diff = userData[1]
@@ -183,7 +190,7 @@ def odr():
         angle = twoT
         # diff = diff
         bgpoly = BG
-        #calcdiff = calcdiff
+        # calcdiff = calcdiff
 
         # csv = session_data_key.urlsafe()
         csv = 'ODR'
@@ -206,6 +213,7 @@ def odr():
         return '''<html><body><h1>Did not get a post!</h1></body></html>'''
 # [END ODR service]
 
+
 # [START CVS]
 @app.route('/csvDownload', methods=['GET'])
 def csvDownload():
@@ -219,6 +227,7 @@ def csvDownload():
     return output
 # [END CVS]
 
+
 @app.errorhandler(500)
 def server_error(e):
     logging.exception('An error occurred during a request.')
@@ -227,10 +236,10 @@ def server_error(e):
     See logs for full stacktrace.
     """.format(e), 500
 
+
 if __name__ == '__main__':
     # This is used when running locally. Gunicorn is used to run the
     # application on Google App Engine. See entrypoint in app.yaml.
     app.run(host='127.0.0.1', port=8080, debug=True)
 # [END app]
-
 

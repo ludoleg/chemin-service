@@ -23,7 +23,7 @@ import phaselist
 import StringIO
 import csv
 
-from flask import Flask, request, render_template, session, make_response, redirect
+from flask import Flask, request, render_template, session, make_response, redirect, url_for
 from flask_cors import CORS
 
 # Application modules
@@ -74,9 +74,9 @@ def rebalance(results):
         i += 1
 
     for i in range(len(name)):
-        available.append(name[i]+'\t'+code[i])
+        available.append(name[i] + '\t' + code[i])
 
-    selected = [a[0]+'\t'+str(a[1]) for a in results]
+    selected = [a[0] + '\t' + str(a[1]) for a in results]
     selected.sort()
     available.sort()
     return selected, available
@@ -204,7 +204,8 @@ def csvDownload():
     cw.writerow(['Mineral', 'AMCSD', 'Mass %'])
     cw.writerows(session['results'])
     output = make_response(line.getvalue())
-    output.headers["Content-Disposition"] = "attachment; filename={}.csv".format(session['filename'])
+    output.headers["Content-Disposition"] = "attachment; filename={}.csv".format(
+        session['filename'])
     output.headers["Content-type"] = "text/csv"
     return output
 # [END CVS]
@@ -234,7 +235,7 @@ def phase():
         # print session['selected']
         # print '####### Inside Phase ####'
         # print session['available']
-        return redirect('/process')
+        return redirect(url_for('process'))
         # result = request.form.get()
         # return(str(selectedlist))
         # return render_template("result.html",result = result)
@@ -252,7 +253,7 @@ def phase():
 
 
 def cleanup(results):
-    selected = [a[0]+'\t'+str(a[1]) for a in results]
+    selected = [a[0] + '\t' + str(a[1]) for a in results]
     return selected
 
 

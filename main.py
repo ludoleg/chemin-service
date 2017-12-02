@@ -124,6 +124,7 @@ def odr():
         session['dbname'] = 'difdata_CheMin.txt'
         session['selected'] = phaselist.cheminPhases
         session['available'] = phaselist.availablePhases
+        session['filename'] = filename
 
         # Parse phases sent by ODR
         phasearray = data['phases']

@@ -97,14 +97,31 @@ def odr_demo():
     return render_template('odr_demo.html')
 
 
+@app.route('/odr_post')
+def odr_post():
+    return render_template('odr_post.html')
+
+
 # [START ODR service]
 # Duplicates /process with input from the ODR site
 @app.route('/odr', methods=['GET', 'POST'])
 def odr():
     if request.method == 'POST':
+        # print request.__dict__
         # Load data from request
-        json_data = request.get_json()
-        data = json_data
+        # Ajax case
+        if request.is_json:
+            json_data = request.get_json()
+            data = json_data
+        # Regular post, text/plain encoded in body
+        else:
+            # Regular post x-www-form-urlencoded
+            d = request.form['data']
+            data = json.loads(d)
+            # Other type of encoding via text/plain
+            # a, b = request.data.split('=')
+            # data = json.loads(b)
+
         sample = data['sample']
         filename = sample['name']
         array = sample['data']

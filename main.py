@@ -163,7 +163,7 @@ def process():
                                           InstrParams,
                                           session['autoremove'])
     # print results
-    # session['results'] = results
+    session['results'] = results
     sel, ava = rebalance(results)
     session['selected'] = sel
     session['available'] = ava

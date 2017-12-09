@@ -1,49 +1,32 @@
-# Copyright 2015 Google Inc. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# [START app]
-import logging
+from flask import Flask, request, render_template, url_for, session, \
+    make_response, redirect, logging, json
+from werkzeug.utils import secure_filename
 
 import numpy as np
-
-import os
-import phaselist
-
 import StringIO
 import csv
 
-from flask import Flask, request, render_template, session, make_response, redirect, url_for
 from flask_cors import CORS
 
 # Application modules
 import qxrd
-import json
+import qxrdtools
+import phaselist
 
-UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = set(['txt', 'plv', 'csv', 'mdi', 'dif'])
+UPLOAD_DIR = 'uploads'
 
-if not os.path.isdir(UPLOAD_FOLDER):
-    os.mkdir(UPLOAD_FOLDER)
-
-ALLOWED_EXTENSIONS = set(['txt', 'plv'])
-
-# [start config]
+# create the application object
 app = Flask(__name__)
 CORS(app)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# config
+import os
+app.config['UPLOAD_FOLDER'] = UPLOAD_DIR
 app.secret_key = 'Ludo'
 
-app.config['DEBUG'] = True
+if not os.path.isdir(UPLOAD_DIR):
+    os.mkdir(UPLOAD_DIR)
 
 
 def rebalance(results):
@@ -71,7 +54,8 @@ def rebalance(results):
         if any(word in name[i] for word in selected):
             # print i, name[i]
             del name[i], code[i]
-        i += 1
+        else:
+            i += 1
 
     for i in range(len(name)):
         available.append(name[i] + '\t' + code[i])
@@ -92,6 +76,38 @@ def about():
     return render_template('about.html')
 
 
+# [START phase setting]
+@app.route('/phase', methods=['GET', 'POST'])
+def phase():
+    if request.method == 'POST':
+        selectedlist = request.form.getlist('selectedphase')
+        availlist = request.form.getlist('availablephase')
+        selectedlist.sort()
+        availlist.sort()
+        session['available'] = availlist
+        session['selected'] = selectedlist
+        session['autoremove'] = False
+        # print '####### Inside Phase ####'
+        # print session['selected']
+        # print '####### Inside Phase ####'
+        # print session['available']
+        return redirect(url_for('process'))
+        # result = request.form.get()
+        # return(str(selectedlist))
+        # return render_template("result.html",result = result)
+    else:
+        # mode = QuantModeModel()
+        # print(mode, file=sys.stderr)
+        # session['mode'] = mode
+        # session['selected'] = phaselist.defaultPhases
+        template_vars = {
+            'availablephaselist': session['available'],
+            'selectedphaselist': session['selected'],
+            'mode': session['dbname']
+        }
+        return render_template('phase.html', **template_vars)
+
+
 @app.route('/odr_demo')
 def odr_demo():
     return render_template('odr_demo.html')
@@ -100,6 +116,92 @@ def odr_demo():
 @app.route('/odr_post')
 def odr_post():
     return render_template('odr_post.html')
+
+
+# [START process]
+@app.route('/process', methods=['GET'])
+def process():
+    # Load parameters for computation
+    filename = session['filename']
+    DBname = session['dbname']
+
+    # Extract angle, diff to populate userData
+    with open(os.path.join(app.config['UPLOAD_FOLDER'], filename)) as infile:
+        array = json.load(infile)
+    x = [li['x'] for li in array]
+    y = [li['y'] for li in array]
+    angle = np.asfarray(np.array(x))
+    diff = np.asfarray(np.array(y))
+    userData = (angle, diff)
+
+    # Phase selection
+    selectedPhases = session['selected']
+    # print userData
+
+    Lambda = 0.0
+    Target = 'Co'
+    FWHMa = 0.0
+    FWHMb = 0.35
+    InstrParams = {"Lambda": Lambda,
+                   "Target": Target,
+                   "FWHMa": FWHMa,
+                   "FWHMb": FWHMb}
+
+    # Dif data captures all cristallographic data
+    selectedphases = []
+    for i in range(len(selectedPhases)):
+        name, code = selectedPhases[i].split('\t')
+        code = int(code)
+        selectedphases.append((name, code))
+
+    # Load in the DB file
+    difdata = open(DBname, 'r').readlines()
+
+    results, BG, calcdiff = qxrd.Qanalyze(userData,
+                                          difdata,
+                                          selectedphases,
+                                          InstrParams,
+                                          session['autoremove'])
+    # print results
+    # session['results'] = results
+    sel, ava = rebalance(results)
+    session['selected'] = sel
+    session['available'] = ava
+    # print(twoT.tolist(), file=sys.stderr)
+    # print(userData, file=sys.stderr)
+
+    twoT = userData[0]
+    diff = userData[1]
+
+    Sum = calcdiff
+    difference_magnification = 1
+    difference = (diff - Sum) * difference_magnification
+    # print difference
+    # logging.debug(results)
+    # logging.info("Done with processing")
+
+    angle = twoT
+    # diff = diff
+    bgpoly = BG
+    # csv = session_data_key.urlsafe()
+    csv = 'ODR'
+
+    template_vars = {
+        'phaselist': results,
+        'angle': angle.tolist(),
+        'diff': diff.tolist(),
+        'bgpoly': bgpoly.tolist(),
+        'sum': calcdiff.tolist(),
+        'difference': difference.tolist(),
+        'url_text': csv,
+        'key': 'ludo',
+        'samplename': filename,
+        'mode': session['dbname'],
+        'availablephaselist': session['available'],
+        'selectedphaselist': session['selected']
+    }
+    return render_template('chart.html', **template_vars)
+# [END process]
 
 
 # [START ODR service]
@@ -214,6 +316,67 @@ def odr():
 # [END ODR service]
 
 
+# [START PHASE MANIP]
+@app.route('/phaseAnalysis', methods=['GET', 'POST'])
+def phaseAnalysis():
+    # select = request.form.get('key')
+    # return select
+    results = session['results']
+    sel, ava = reformat
+    session['selected'] = sel
+    session['available'] = ava
+    template_vars = {
+        'availablephaselist': session['available'],
+        'selectedphaselist': session['selected'],
+        'mode': session['dbname']
+    }
+    return render_template('selector.html', **template_vars)
+
+    # return render_template('selector.html')
+
+
+def reformat(results):
+    selected = [a[0] for a in results]
+    available = []
+    db = session['selected']
+
+    # print selected
+    # inventory = phaselist.rockPhasesj
+    # print inventory
+    inventory = [a.split('\t') for a in db]
+    name = [a[0] for a in inventory]
+    code = [a[1] for a in inventory]
+
+    # for i in range(0, len(phaselist.rockPhases)):
+    #     if selected[i] in phaselist.rockPhases[i]:
+    #         print "yes"
+    i = 0
+    while i < len(name):
+        if any(word in name[i] for word in selected):
+            # print i, name[i]
+            del name[i], code[i]
+        else:
+            i += 1
+
+    for i in range(len(name)):
+        available.append(name[i] + '\t' + code[i])
+
+    # selected = [name+code for a in name]
+
+    # selected = [name[0]+'\t'+str(a[1]) for a in results]
+    # selected = [(name, code) for a in name]
+    # print available
+    # print selected
+    selected = [a[0] + '\t' + str(a[1]) for a in results]
+    # print selected, available
+    return selected, available
+
+
+def cleanup(results):
+    selected = [a[0] + '\t' + str(a[1]) for a in results]
+    return selected
+
+
 # [START CVS]
 @app.route('/csvDownload', methods=['GET'])
 def csvDownload():
@@ -236,129 +399,6 @@ def server_error(e):
     An internal error occurred: <pre>{}</pre>
     See logs for full stacktrace.
     """.format(e), 500
-
-
-# [START phase setting]
-@app.route('/phase', methods=['GET', 'POST'])
-def phase():
-    if request.method == 'POST':
-        selectedlist = request.form.getlist('selectedphase')
-        availlist = request.form.getlist('availablephase')
-        selectedlist.sort()
-        availlist.sort()
-        session['available'] = availlist
-        session['selected'] = selectedlist
-        session['autoremove'] = False
-        # print '####### Inside Phase ####'
-        # print session['selected']
-        # print '####### Inside Phase ####'
-        # print session['available']
-        return redirect(url_for('process'))
-        # result = request.form.get()
-        # return(str(selectedlist))
-        # return render_template("result.html",result = result)
-    else:
-        # mode = QuantModeModel()
-        # print(mode, file=sys.stderr)
-        # session['mode'] = mode
-        # session['selected'] = phaselist.defaultPhases
-        template_vars = {
-            'availablephaselist': session['available'],
-            'selectedphaselist': session['selected'],
-            'mode': session['dbname']
-        }
-        return render_template('phase.html', **template_vars)
-
-
-def cleanup(results):
-    selected = [a[0] + '\t' + str(a[1]) for a in results]
-    return selected
-
-
-# [START process]
-@app.route('/process', methods=['GET'])
-def process():
-    # Load parameters for computation
-    filename = session['filename']
-    DBname = session['dbname']
-
-    # Extract angle, diff to populate userData
-    with open(os.path.join(app.config['UPLOAD_FOLDER'], filename)) as infile:
-        array = json.load(infile)
-    x = [li['x'] for li in array]
-    y = [li['y'] for li in array]
-    angle = np.asfarray(np.array(x))
-    diff = np.asfarray(np.array(y))
-    userData = (angle, diff)
-
-    # Phase selection
-    selectedPhases = session['selected']
-    # print userData
-
-    Lambda = 0.0
-    Target = 'Co'
-    FWHMa = 0.0
-    FWHMb = 0.35
-    InstrParams = {"Lambda": Lambda,
-                   "Target": Target,
-                   "FWHMa": FWHMa,
-                   "FWHMb": FWHMb}
-
-    # Dif data captures all cristallographic data
-    selectedphases = []
-    for i in range(len(selectedPhases)):
-        name, code = selectedPhases[i].split('\t')
-        code = int(code)
-        selectedphases.append((name, code))
-
-    # Load in the DB file
-    difdata = open(DBname, 'r').readlines()
-
-    results, BG, calcdiff = qxrd.Qanalyze(userData,
-                                          difdata,
-                                          selectedphases,
-                                          InstrParams,
-                                          session['autoremove'])
-    # print results
-    # session['results'] = results
-    sel, ava = rebalance(results)
-    session['selected'] = sel
-    session['available'] = ava
-    # print(twoT.tolist(), file=sys.stderr)
-    # print(userData, file=sys.stderr)
-
-    twoT = userData[0]
-    diff = userData[1]
-
-    Sum = calcdiff
-    difference_magnification = 1
-    difference = (diff - Sum) * difference_magnification
-    # print difference
-    # logging.debug(results)
-    # logging.info("Done with processing")
-
-    angle = twoT
-    # diff = diff
-    bgpoly = BG
-    # csv = session_data_key.urlsafe()
-    csv = 'ODR'
-
-    template_vars = {
-        'phaselist': results,
-        'angle': angle.tolist(),
-        'diff': diff.tolist(),
-        'bgpoly': bgpoly.tolist(),
-        'sum': calcdiff.tolist(),
-        'difference': difference.tolist(),
-        'url_text': csv,
-        'key': 'ludo',
-        'samplename': filename,
-        'mode': session['dbname'],
-        'availablephaselist': session['available'],
-        'selectedphaselist': session['selected']
-    }
-    return render_template('chart.html', **template_vars)
-# [END process]
 
 
 if __name__ == '__main__':

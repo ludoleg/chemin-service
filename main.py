@@ -280,16 +280,22 @@ def odr():
         twoT = userData[0]
         diff = userData[1]
 
+        angle = twoT
+        # diff = diff
+        bgpoly = BG
+        # calcdiff = calcdiff
+
+        xmin = 5
+        # xmax = max(angle)
+        Imax = max(diff[min(np.where(np.array(angle) > xmin)[0]):max(np.where(np.array(angle) > xmin)[0])])
+        offset = Imax / 2 * 3
+
         Sum = calcdiff
         difference_magnification = 1
         difference = (diff - Sum) * difference_magnification
         # logging.debug(results)
         # logging.info("Done with processing")
-
-        angle = twoT
-        # diff = diff
-        bgpoly = BG
-        # calcdiff = calcdiff
+        difference = difference + offset
 
         # csv = session_data_key.urlsafe()
         csv = 'ODR'

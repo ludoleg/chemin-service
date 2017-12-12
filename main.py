@@ -184,6 +184,18 @@ def process():
     # diff = diff
     bgpoly = BG
     # csv = session_data_key.urlsafe()
+    xmin = 5
+    # xmax = max(angle)
+    Imax = max(diff[min(np.where(np.array(angle) > xmin)[0]):max(np.where(np.array(angle) > xmin)[0])])
+    offset = Imax / 2 * 3
+
+    Sum = calcdiff
+    difference_magnification = 1
+    difference = (diff - Sum) * difference_magnification
+    # logging.debug(results)
+    # logging.info("Done with processing")
+    difference = difference + offset
+
     csv = 'ODR'
 
     template_vars = {

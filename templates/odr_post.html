@@ -1010,8 +1010,7 @@
                  alert("The button was clicked.");
                  var form = document.createElement("form");
                  form.setAttribute("method", "post");
-                 form.setAttribute("action", "//localhost:8080/odr");
-                 form.setAttribute("enctype", "text/plain");
+                 form.setAttribute("action", "/chemin");
                  function submitToPopup(f) {
                      form.target = 'qanalyze';
                      var w = window.open('QAnalyze', form.target);

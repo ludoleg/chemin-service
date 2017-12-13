@@ -123,7 +123,6 @@ def odr_post():
 def process():
     # Load parameters for computation
     filename = session['filename']
-    DBname = session['dbname']
 
     # Extract angle, diff to populate userData
     with open(os.path.join(app.config['UPLOAD_FOLDER'], filename)) as infile:
@@ -132,12 +131,8 @@ def process():
     y = [li['y'] for li in array]
     angle = np.asfarray(np.array(x))
     diff = np.asfarray(np.array(y))
-    userData = (angle, diff)
 
-    # Phase selection
-    selectedPhases = session['selected']
-    # print userData
-
+    # Force mode
     Lambda = 0.0
     Target = 'Co'
     FWHMa = 0.0
@@ -147,6 +142,8 @@ def process():
                    "FWHMa": FWHMa,
                    "FWHMb": FWHMb}
 
+    # Phase selection
+    selectedPhases = session['selected']
     # Dif data captures all cristallographic data
     selectedphases = []
     for i in range(len(selectedPhases)):
@@ -155,15 +152,16 @@ def process():
         selectedphases.append((name, code))
 
     # Load in the DB file
+    DBname = session['dbname']
     difdata = open(DBname, 'r').readlines()
-
+    userData = (angle, diff)
     results, BG, calcdiff = qxrd.Qanalyze(userData,
                                           difdata,
                                           selectedphases,
                                           InstrParams,
                                           session['autoremove'])
-    # print results
-    session['results'] = results
+
+    # Re-create the subset of phases to select
     sel, ava = rebalance(results)
     session['selected'] = sel
     session['available'] = ava
@@ -172,21 +170,11 @@ def process():
 
     twoT = userData[0]
     diff = userData[1]
-
-    Sum = calcdiff
-    difference_magnification = 1
-    difference = (diff - Sum) * difference_magnification
-    # print difference
-    # logging.debug(results)
-    # logging.info("Done with processing")
-
     angle = twoT
-    # diff = diff
     bgpoly = BG
-    # csv = session_data_key.urlsafe()
     xmin = 5
     # xmax = max(angle)
-    Imax = max(diff[min(np.where(np.array(angle) > xmin)[0]):max(np.where(np.array(angle) > xmin)[0])])
+    Imax = max(diff[min(np.where(np.array(angle) > xmin)[0])                    :max(np.where(np.array(angle) > xmin)[0])])
     offset = Imax / 2 * 3
 
     Sum = calcdiff
@@ -197,6 +185,8 @@ def process():
     difference = difference + offset
 
     csv = 'ODR'
+
+    session['results'] = results
 
     template_vars = {
         'phaselist': results,
@@ -218,8 +208,8 @@ def process():
 
 # [START ODR service]
 # Duplicates /process with input from the ODR site
-@app.route('/odr', methods=['GET', 'POST'])
-def odr():
+@app.route('/chemin', methods=['GET', 'POST'])
+def chemin():
     if request.method == 'POST':
         # print request.__dict__
         # Load data from request
@@ -230,8 +220,8 @@ def odr():
         # Regular post, text/plain encoded in body
         else:
             # Regular post x-www-form-urlencoded
-            d = request.form['data']
-            data = json.loads(d)
+            dsample = request.form['data']
+            data = json.loads(dsample)
             # Other type of encoding via text/plain
             # a, b = request.data.split('=')
             # data = json.loads(b)
@@ -244,12 +234,6 @@ def odr():
         with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'w') as outfile:
             json.dump(array, outfile)
 
-        x = [li['x'] for li in array]
-        y = [li['y'] for li in array]
-
-        angle = np.asfarray(np.array(x))
-        diff = np.asfarray(np.array(y))
-
         # Initialize the session object with chemin data
         session['autoremove'] = False
         session['dbname'] = 'difdata_CheMin.txt'
@@ -257,27 +241,33 @@ def odr():
         session['available'] = phaselist.availablePhases
         session['filename'] = filename
 
+        x = [li['x'] for li in array]
+        y = [li['y'] for li in array]
+
+        angle = np.asfarray(np.array(x))
+        diff = np.asfarray(np.array(y))
+
+        # Force mode
+        Lambda = 0.0
+        Target = 'Co'
+        FWHMa = 0.0
+        FWHMb = 0.35
+        InstrParams = {"Lambda": Lambda,
+                       "Target": Target,
+                       "FWHMa": FWHMa,
+                       "FWHMb": FWHMb}
+
         # Parse phases sent by ODR
         phasearray = data['phases']
         selectedphases = [(d['name'], d['AMCSD_code']) for d in phasearray]
         # TODO 2nd pass with selected
-
-        # Force mode
-        InstrParams = {"Lambda": 0,
-                       "Target": 'Co',
-                       "FWHMa": 0.00,
-                       "FWHMb": 0.35}
 
         # Force Chemin for ODR
         # Dif data captures all cristallographic data
         # Load in the DB file
         DBname = session['dbname']
         difdata = open(DBname, 'r').readlines()
-
         userData = (angle, diff)
-        # print(userData)
-
-        # Compute analysis QAnalyze
         results, BG, calcdiff = qxrd.Qanalyze(userData,
                                               difdata,
                                               selectedphases,
@@ -288,18 +278,16 @@ def odr():
         sel, ava = rebalance(results)
         session['selected'] = sel
         session['available'] = ava
+        # print(twoT.tolist(), file=sys.stderr)
+        # print(userData, file=sys.stderr)
 
         twoT = userData[0]
         diff = userData[1]
-
         angle = twoT
-        # diff = diff
         bgpoly = BG
-        # calcdiff = calcdiff
-
         xmin = 5
         # xmax = max(angle)
-        Imax = max(diff[min(np.where(np.array(angle) > xmin)[0]):max(np.where(np.array(angle) > xmin)[0])])
+        Imax = max(diff[min(np.where(np.array(angle) > xmin)[0])                        :max(np.where(np.array(angle) > xmin)[0])])
         offset = Imax / 2 * 3
 
         Sum = calcdiff
@@ -309,8 +297,8 @@ def odr():
         # logging.info("Done with processing")
         difference = difference + offset
 
-        # csv = session_data_key.urlsafe()
         csv = 'ODR'
+
         session['results'] = results
         session['filename'] = filename
 

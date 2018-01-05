@@ -159,7 +159,8 @@ def process():
                                           difdata,
                                           selectedphases,
                                           InstrParams,
-                                          session['autoremove'])
+                                          session['autoremove'],
+                                          True)
 
     # Re-create the subset of phases to select
     sel, ava = rebalance(results)
@@ -272,7 +273,8 @@ def chemin():
                                               difdata,
                                               selectedphases,
                                               InstrParams,
-                                              session['autoremove'])
+                                              session['autoremove'],
+                                              True)
 
         # Re-create the subset of phases to select
         sel, ava = rebalance(results)

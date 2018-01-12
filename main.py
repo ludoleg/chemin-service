@@ -238,6 +238,7 @@ def chemin():
         filename = sample['name']
         array = sample['data']
         app.logger.warning('Size of ODR array: %d', len(array))
+        print array
 
         # Save to file
         with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'w') as outfile:

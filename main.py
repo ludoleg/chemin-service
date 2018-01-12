@@ -181,7 +181,7 @@ def process():
     bgpoly = BG
     xmin = 5
     # xmax = max(angle)
-    Imax = max(diff[min(np.where(np.array(angle) > xmin)[0])                    :max(np.where(np.array(angle) > xmin)[0])])
+    Imax = max(diff[min(np.where(np.array(angle) > xmin)[0]):max(np.where(np.array(angle) > xmin)[0])])
     offset = Imax / 2 * 3
 
     Sum = calcdiff
@@ -193,7 +193,6 @@ def process():
 
     csv = 'ODR'
     app.logger.warning('Length of angle array: %d', len(angle))
-    print len(angle)
 
     session['results'] = results
 
@@ -238,6 +237,7 @@ def chemin():
         sample = data['sample']
         filename = sample['name']
         array = sample['data']
+        app.logger.warning('Size of ODR array: %d', len(array))
 
         # Save to file
         with open(os.path.join(app.config['UPLOAD_FOLDER'], filename), 'w') as outfile:
@@ -297,7 +297,7 @@ def chemin():
         bgpoly = BG
         xmin = 5
         # xmax = max(angle)
-        Imax = max(diff[min(np.where(np.array(angle) > xmin)[0])                        :max(np.where(np.array(angle) > xmin)[0])])
+        Imax = max(diff[min(np.where(np.array(angle) > xmin)[0]):max(np.where(np.array(angle) > xmin)[0])])
         offset = Imax / 2 * 3
 
         Sum = calcdiff

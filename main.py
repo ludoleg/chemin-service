@@ -1,10 +1,13 @@
 from flask import Flask, request, render_template, url_for, session, \
-    make_response, redirect, logging, json
+    make_response, redirect
 from werkzeug.utils import secure_filename
 
 import numpy as np
 import StringIO
 import csv
+import sys
+import logging
+import json
 
 from flask_cors import CORS
 
@@ -19,6 +22,9 @@ UPLOAD_DIR = 'uploads'
 # create the application object
 app = Flask(__name__)
 CORS(app)
+app.logger.addHandler(logging.StreamHandler(sys.stdout))
+app.logger.setLevel(logging.INFO)
+app.logger.info('Welcome to Qanalyze')
 
 # config
 import os
@@ -118,7 +124,7 @@ def odr_post():
     return render_template('odr_post.html')
 
 
-# [START process]
+# [START odr second pass process, this is run when the user changes the phases and relaunch after the chemin call]
 @app.route('/process', methods=['GET'])
 def process():
     # Load parameters for computation
@@ -186,6 +192,8 @@ def process():
     difference = difference + offset
 
     csv = 'ODR'
+    app.logger.warning('Length of angle array: %d', len(angle))
+    print len(angle)
 
     session['results'] = results
 
@@ -300,6 +308,7 @@ def chemin():
         difference = difference + offset
 
         csv = 'ODR'
+        app.logger.warning('Length of angle array: %d', len(angle))
 
         session['results'] = results
         session['filename'] = filename
